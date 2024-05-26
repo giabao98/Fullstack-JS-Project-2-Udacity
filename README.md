@@ -28,7 +28,7 @@
      ```
 
 4. **Run Database Migrations**:
-   Execute `db-migration up` to create the necessary tables for the project. This command uses the `ENV` environment variable to determine which database to apply the migrations to. By default, `ENV` is set to "dev", which targets the development database (udacity).
+   Execute `db-migrate up` to create the necessary tables for the project. This command uses the `ENV` environment variable to determine which database to apply the migrations to. By default, `ENV` is set to "dev", which targets the development database (udacity).
 
 5. **Run Tests**:
    To execute the tests, use `npm run test`. This command will use the test database and you can check the results in the output. The `package.json` file sets the `ENV` variable to `test` for testing purposes.
