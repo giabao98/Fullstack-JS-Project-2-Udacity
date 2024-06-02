@@ -1,22 +1,12 @@
-import { Pool } from "pg";
+import client from "../connection";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 
 dotenv.config();
-
-const pool = new Pool({
-  host: process.env.POSTGRES_HOST,
-  port: Number(process.env.POSTGRES_PORT),
-  user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD,
-  database: process.env.POSTGRES_DB,
-});
-
 const pepper = process.env.BCRYPT_PASSWORD;
-const saltRounds = parseInt(process.env.SALT_ROUND as string);
-const jwtSecret = process.env.SECRET_TOKEN as string;
-
+const saltRound = Number(process.env.SALT_ROUND);
+const secret = String(process.env.SECRET_TOKEN);
 export type User = {
   id?: number;
   firstName: string;
@@ -26,100 +16,109 @@ export type User = {
 };
 
 export class UserStore {
+  // @ts-ignore
   async index(): Promise<User[]> {
-    const client = await pool.connect();
     try {
-      const sql = "SELECT * FROM users";
-      const result = await client.query(sql);
-      return result.rows;
-    } catch (error) {
-      throw new Error(`Could not retrieve users: ${error}`);
-    } finally {
-      client.release();
-    }
-  }
-
-  async showUserInfo(userId: number): Promise<{ data: User; token: string }> {
-    const client = await pool.connect();
-    try {
-      const sql = "SELECT * FROM users WHERE id = $1";
-      const result = await client.query(sql, [userId]);
-
-      if (result.rows.length) {
-        const user = result.rows[0];
-        const token = jwt.sign(
-          { userName: user.user_name, id: user.id },
-          jwtSecret
-        );
-        return { data: user, token };
+      const connection = await client!.connect();
+      const sql = `SELECT * FROM users`;
+      const result = await connection.query(sql);
+      if (result && result.rows) {
+        connection.release();
+        return result.rows;
       } else {
-        throw new Error("User not found");
+        connection.release();
+        throw new Error(`Data Not Found`);
       }
     } catch (error) {
-      throw new Error(`Could not retrieve user: ${error}`);
-    } finally {
-      client.release();
+      throw new Error(`${error}`);
+    }
+  }
+  // @ts-ignore
+  async showUserInfo(user_id): Promise<Product> {
+    try {
+      const connection = await client!.connect();
+      const sql = `SELECT * FROM users WHERE id = ${user_id}`;
+      const result = await connection.query(sql);
+      if (result.rows && result.rows.length > 0) {
+        const token = jwt.sign(
+          { userName: result.rows[0].user_name, id: result.rows[0].id },
+          secret
+        );
+        const data = {
+          data: result.rows[0],
+          token: token,
+        };
+        connection.release();
+        return data;
+      } else {
+        connection.release();
+        throw new Error(`Data Not Found`);
+      }
+    } catch (error) {
+      throw new Error(`${error}`);
     }
   }
 
-  async createUser(user: User): Promise<{ data: User; token: string }> {
-    const client = await pool.connect();
+  async createUser(user: User): Promise<User> {
+    //@ts-ignore
     try {
-      const checkExistenceSQL =
-        "SELECT EXISTS (SELECT 1 FROM users WHERE user_name = $1)";
-      const result = await client.query(checkExistenceSQL, [user.userName]);
-
-      if (result.rows[0].exists) {
-        throw new Error("Username already exists");
+      const connection = await client!.connect();
+      const sql_checkExist = `SELECT EXISTS (SELECT 1 FROM users WHERE user_name = '${user.userName}' limit 1)`;
+      const existedUser = await connection.query(sql_checkExist);
+      if (existedUser.rows[0] && existedUser.rows[0].exists) {
+        connection.release();
+        throw new Error(" User name is already exist");
+      } else {
+        const sql_insert = `INSERT INTO users (first_name,last_name,user_name,password) VALUES ($1,$2,$3,$4) RETURNING *`;
+        const hash = bcrypt.hashSync(user.password + pepper, saltRound);
+        const result = await connection.query(sql_insert, [
+          user.firstName,
+          user.lastName,
+          user.userName,
+          hash,
+        ]);
+        const createdUser = result.rows[0];
+        const token = jwt.sign(
+          { userName: createdUser.user_name, id: createdUser.id },
+          secret
+        );
+        const data = {
+          data: result.rows[0],
+          token: token,
+        };
+        connection.release();
+        //@ts-ignore
+        return data;
       }
-
-      const hash = bcrypt.hashSync(user.password + pepper, saltRounds);
-      const insertSQL =
-        "INSERT INTO users (first_name, last_name, user_name, password) VALUES ($1, $2, $3, $4) RETURNING *";
-      const insertResult = await client.query(insertSQL, [
-        user.firstName,
-        user.lastName,
-        user.userName,
-        hash,
-      ]);
-
-      const newUser = insertResult.rows[0];
-      const token = jwt.sign(
-        { userName: newUser.user_name, id: newUser.id },
-        jwtSecret
-      );
-
-      return { data: newUser, token };
     } catch (error) {
-      throw new Error(`Could not create user: ${error}`);
-    } finally {
-      client.release();
+      throw new Error(`${error}`);
     }
   }
-
-  async authenticate(
-    userName: string,
-    password: string
-  ): Promise<string | null> {
-    const client = await pool.connect();
+  async authenticate(userName: string, password: string): Promise<User> {
     try {
-      const sql = "SELECT * FROM users WHERE user_name = $1";
-      const result = await client.query(sql, [userName]);
-
-      if (result.rows.length) {
+      const connection = await client!.connect();
+      const sql = `SELECT password FROM users WHERE user_name=($1)`;
+      const result = await connection.query(sql, [userName]);
+      if (result.rows.length && result.rows.length > 0) {
         const user = result.rows[0];
         if (bcrypt.compareSync(password + pepper, user.password)) {
-          return jwt.sign({ userName: user.user_name, id: user.id }, jwtSecret);
+          const token = jwt.sign(
+            { userName: user.user_name, id: user.id },
+            secret
+          );
+          connection.release();
+          //@ts-ignore
+          return token;
         } else {
-          throw new Error("Invalid username or password");
+          connection.release();
+          throw new Error("Invalid username or password. Please try again");
         }
-      } else {
-        throw new Error("User not found");
       }
+      connection.release();
+      //@ts-ignore
+      return null;
     } catch (error) {
-      throw new Error(`Could not authenticate user: ${error}`);
-    } finally {
-      client.release();
+      throw new Error(`${error}`);
     }
   }
 }

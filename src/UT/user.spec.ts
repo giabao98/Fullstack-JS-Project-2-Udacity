@@ -69,7 +69,7 @@ describe("User Endpoint Tests", () => {
     };
     const url = `${backendServer}/users/signUp`;
     const result = await axios.post(url, singUpUser);
-    expect(result.status).toBe(200);
+    expect(result.status).toBe(201);
   });
 
   it("should require token for Index and return value", async () => {
@@ -96,7 +96,7 @@ describe("User Endpoint Tests", () => {
     };
     const url = `${backendServer}/users/`;
     const result = await axios.post(url, singUpUser, config);
-    expect(result.status).toBe(200);
+    expect(result.status).toBe(201);
   });
 
   it("should show user info and require token", async () => {
