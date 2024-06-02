@@ -10,7 +10,6 @@ const router = express.Router();
 const userStoreInstance = new UserStore();
 const secretToken = process.env.SECRET_TOKEN as string;
 
-// Utility function to get error message
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message;
   return String(error);
@@ -18,20 +17,6 @@ const getErrorMessage = (error: unknown): string => {
 
 // Retrieve all users
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader?.split(" ")[1];
-    if (token) {
-      jwt.verify(token, secretToken);
-    } else {
-      return res.status(401).send({ message: "Authorization token missing" });
-    }
-  } catch (error) {
-    return res
-      .status(401)
-      .send({ message: `Unauthorized: ${getErrorMessage(error)}` });
-  }
-
   try {
     const allUsers = await userStoreInstance.index();
     res
@@ -79,9 +64,10 @@ router.post("/signUp", async (req: Request, res: Response) => {
 
   try {
     const registeredUser = await userStoreInstance.createUser(newUser);
+    const token = jwt.sign({ user: registeredUser }, secretToken);
     res
       .status(201)
-      .json({ message: "User registered successfully", token: registeredUser });
+      .json({ message: "User registered successfully", token });
   } catch (error) {
     res
       .status(422)
@@ -130,9 +116,14 @@ router.post("/authenticate", async (req: Request, res: Response) => {
       userName,
       password
     );
-    res
-      .status(200)
-      .json({ message: "Login successful", token: authenticatedUser });
+    if (authenticatedUser) {
+      const token = jwt.sign({ user: authenticatedUser }, secretToken);
+      res
+        .status(200)
+        .json({ message: "Login successful", token });
+    } else {
+      res.status(401).json({ message: "Authentication failed" });
+    }
   } catch (error) {
     res.status(403).json({ message: `Forbidden: ${getErrorMessage(error)}` });
   }
