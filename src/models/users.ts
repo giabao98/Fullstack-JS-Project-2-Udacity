@@ -56,7 +56,7 @@ export class UserStore {
       }
     } catch (error) {
       console.error(`Error in showUserInfo: ${error}`);
-      throw new Error(`${error}`);
+      throw new Error(`Unable to fetch user info: ${error}`);
     }
   }
 

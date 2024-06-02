@@ -51,7 +51,7 @@ describe("User Endpoint Tests", () => {
         headers: { Authorization: `Bearer ${token}` },
       };
     } catch (error) {
-      console.log("Error:", error);
+      console.log("Error in beforeAll: ", error);
     }
   });
 

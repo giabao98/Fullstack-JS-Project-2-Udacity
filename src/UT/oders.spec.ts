@@ -78,7 +78,7 @@ describe("Order Endpoints Tests", () => {
         newOrder,
         config
       );
-      expect(result.status).toBe(200);
+      expect(result.status).toBe(201);
     } catch (error) {
       console.log("Error:", error);
     }

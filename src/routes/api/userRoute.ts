@@ -40,8 +40,13 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
     const user = await userStoreInstance.showUserInfo(userId);
     res
       .status(200)
-      .json({ message: "User info retrieved successfully", data: user });
+      .json({
+        message: "User info retrieved successfully",
+        data: user.data,
+        token: user.token,
+      });
   } catch (error) {
+    console.error(`Error in GET /users/:id: ${error}`);
     res
       .status(500)
       .send({ message: `Internal Server Error: ${getErrorMessage(error)}` });
@@ -64,12 +69,10 @@ router.post("/signUp", async (req: Request, res: Response) => {
 
   try {
     const registeredUser = await userStoreInstance.createUser(newUser);
-    res
-      .status(201)
-      .json({
-        message: "User registered successfully",
-        token: registeredUser.token,
-      });
+    res.status(201).json({
+      message: "User registered successfully",
+      token: registeredUser.token,
+    });
   } catch (error) {
     console.error(`Error in signUp: ${error}`);
     res
