@@ -1,12 +1,4 @@
-import { Pool } from "pg";
-
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT as string),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-});
+import client from "../connection";
 
 export type Product = {
   id?: number;
@@ -14,74 +6,83 @@ export type Product = {
   price: number;
   category?: string;
 };
-
 export class ProductStore {
+  // @ts-ignore
   async getAllProducts(): Promise<Product[]> {
-    const client = await pool.connect();
     try {
-      const query = "SELECT * FROM products";
-      const result = await client.query(query);
-      return result.rows;
-    } catch (error) {
-      throw new Error(`Unable to retrieve products: ${error}`);
-    } finally {
-      client.release();
-    }
-  }
-
-  async getProductById(productId: number): Promise<Product> {
-    const client = await pool.connect();
-    try {
-      const query = "SELECT * FROM products WHERE id = $1";
-      const result = await client.query(query, [productId]);
-      if (result.rows.length) {
-        return result.rows[0];
-      } else {
-        throw new Error(`Product with ID ${productId} not found`);
-      }
-    } catch (error) {
-      throw new Error(`Unable to retrieve product: ${error}`);
-    } finally {
-      client.release();
-    }
-  }
-
-  async createNewProduct(product: Product): Promise<Product> {
-    const client = await pool.connect();
-    try {
-      const query =
-        "INSERT INTO products (name, price, category) VALUES ($1, $2, $3) RETURNING *";
-      const result = await client.query(query, [
-        product.name,
-        product.price,
-        product.category,
-      ]);
-      if (result.rows.length) {
-        return result.rows[0];
-      } else {
-        throw new Error("Failed to create new product");
-      }
-    } catch (error) {
-      throw new Error(`Unable to create product: ${error}`);
-    } finally {
-      client.release();
-    }
-  }
-
-  async getProductsByCategory(category: string): Promise<Product[]> {
-    const client = await pool.connect();
-    try {
-      const query = "SELECT * FROM products WHERE category ILIKE $1";
-      const result = await client.query(query, [`%${category}%`]);
-      if (result.rows.length) {
+      const connection = await client!.connect();
+      const sql = `SELECT * FROM products`;
+      const result = await connection.query(sql);
+      if (result && result.rows) {
+        connection.release();
         return result.rows;
       } else {
-        throw new Error(`No products found in category ${category}`);
+        connection.release();
+        throw new Error(`Data Not Found`);
       }
     } catch (error) {
-      throw new Error(`Unable to retrieve products by category: ${error}`);
-    } finally {
-      client.release();
+      throw new Error(`${error}`);
+    }
+  }
+  // @ts-ignore
+  async getProductById(product_id): Promise<Product> {
+    try {
+      const connection = await client!.connect();
+      const sql = `SELECT * FROM products WHERE id = ${product_id}`;
+      const result = await connection.query(sql);
+      if (result.rows && result.rows.length > 0) {
+        connection.release();
+        return result.rows[0];
+      } else {
+        connection.release();
+        throw new Error(`Data Not Found`);
+      }
+    } catch (error) {
+      throw new Error(`${error}`);
+    }
+  }
+  // @ts-ignore
+  async createNewProduct(p: Product): Promise<Product> {
+    try {
+      const newProduct: Product = {
+        name: p.name,
+        price: p.price,
+        category: p.category,
+      };
+      const connection = await client!.connect();
+      const sql =
+        "INSERT INTO products (name, price , category) VALUES ($1,$2,$3) RETURNING *";
+      const result = await connection.query(sql, [
+        newProduct.name,
+        newProduct.price,
+        newProduct.category,
+      ]);
+      if (result && result.rows.length > 0) {
+        const createdProduct = result.rows[0];
+        connection.release();
+        return createdProduct;
+      } else {
+        connection.release();
+        throw new Error(`Error when insert data to db`);
+      }
+    } catch (error) {
+      throw new Error(`${error}`);
+    }
+  }
+  async getProductsByCategory(category: string): Promise<Product[]> {
+    try {
+      const connection = await client!.connect();
+      const sql = `SELECT * FROM products WHERE category LIKE '%${category}%'`;
+      const result = await connection.query(sql);
+      if (result && result.rows.length > 0) {
+        const productByCategory = result.rows;
+        return productByCategory;
+      } else {
+        connection.release();
+        throw new Error(`Data Not Found`);
+      }
+    } catch (error) {
+      throw new Error(`${error}`);
     }
   }
 }

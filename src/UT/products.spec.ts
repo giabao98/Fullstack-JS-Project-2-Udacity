@@ -92,7 +92,7 @@ describe("Product Endpoint Tests", () => {
       headers: { Authorization: `Bearer ${loginToken}` },
     };
     const result = await axios.post(url, newProduct, config);
-    expect(result.status).toBe(200);
+    expect(result.status).toBe(201);
   });
 
   it("should get a list of products by category", async () => {
