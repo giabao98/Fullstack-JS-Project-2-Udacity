@@ -56,7 +56,6 @@ Set the following environment variables for the project:
 
 ```
 POSTGRES_HOST=127.0.0.1
-POSTGRES_PORT=5432
 POSTGRES_DB=udacity
 POSTGRES_USER=udacity_user
 POSTGRES_PASSWORD=udacity_password

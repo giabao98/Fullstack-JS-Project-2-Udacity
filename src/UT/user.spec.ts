@@ -61,14 +61,14 @@ describe("User Endpoint Tests", () => {
   });
 
   it("should let user sign up successfully", async () => {
-    const singUpUser = {
+    const signUpUser = {
       first_name: "Lionel",
       last_name: "Messi",
       userName: "lionel.messi",
       password: "udacity_password",
     };
     const url = `${backendServer}/users/signUp`;
-    const result = await axios.post(url, singUpUser);
+    const result = await axios.post(url, signUpUser);
     expect(result.status).toBe(201);
   });
 
@@ -83,7 +83,7 @@ describe("User Endpoint Tests", () => {
   });
 
   it("should let user create a new user successfully and require token", async () => {
-    const singUpUser = {
+    const signUpUser = {
       first_name: "Cristiano",
       last_name: "Ronaldo",
       userName: "cristiano.ronaldo",
@@ -95,7 +95,7 @@ describe("User Endpoint Tests", () => {
       headers: { Authorization: `Bearer ${loginToken}` },
     };
     const url = `${backendServer}/users/`;
-    const result = await axios.post(url, singUpUser, config);
+    const result = await axios.post(url, signUpUser, config);
     expect(result.status).toBe(201);
   });
 

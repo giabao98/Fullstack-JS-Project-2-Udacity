@@ -64,11 +64,14 @@ router.post("/signUp", async (req: Request, res: Response) => {
 
   try {
     const registeredUser = await userStoreInstance.createUser(newUser);
-    const token = jwt.sign({ user: registeredUser }, secretToken);
     res
       .status(201)
-      .json({ message: "User registered successfully", token });
+      .json({
+        message: "User registered successfully",
+        token: registeredUser.token,
+      });
   } catch (error) {
+    console.error(`Error in signUp: ${error}`);
     res
       .status(422)
       .json({ message: `Unprocessable Entity: ${getErrorMessage(error)}` });
@@ -118,9 +121,7 @@ router.post("/authenticate", async (req: Request, res: Response) => {
     );
     if (authenticatedUser) {
       const token = jwt.sign({ user: authenticatedUser }, secretToken);
-      res
-        .status(200)
-        .json({ message: "Login successful", token });
+      res.status(200).json({ message: "Login successful", token });
     } else {
       res.status(401).json({ message: "Authentication failed" });
     }

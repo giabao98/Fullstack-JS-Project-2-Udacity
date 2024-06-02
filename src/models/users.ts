@@ -34,11 +34,11 @@ export class UserStore {
     }
   }
   // @ts-ignore
-  async showUserInfo(user_id): Promise<Product> {
+  async showUserInfo(user_id: number): Promise<{ data: User; token: string }> {
     try {
       const connection = await client!.connect();
-      const sql = `SELECT * FROM users WHERE id = ${user_id}`;
-      const result = await connection.query(sql);
+      const sql = `SELECT * FROM users WHERE id = $1`;
+      const result = await connection.query(sql, [user_id]);
       if (result.rows && result.rows.length > 0) {
         const token = jwt.sign(
           { userName: result.rows[0].user_name, id: result.rows[0].id },
@@ -55,21 +55,23 @@ export class UserStore {
         throw new Error(`Data Not Found`);
       }
     } catch (error) {
+      console.error(`Error in showUserInfo: ${error}`);
       throw new Error(`${error}`);
     }
   }
 
-  async createUser(user: User): Promise<User> {
-    //@ts-ignore
+  async createUser(user: User): Promise<{ data: User; token: string }> {
     try {
       const connection = await client!.connect();
-      const sql_checkExist = `SELECT EXISTS (SELECT 1 FROM users WHERE user_name = '${user.userName}' limit 1)`;
-      const existedUser = await connection.query(sql_checkExist);
+      const sql_checkExist = `SELECT EXISTS (SELECT 1 FROM users WHERE user_name = $1 limit 1)`;
+      const existedUser = await connection.query(sql_checkExist, [
+        user.userName,
+      ]);
       if (existedUser.rows[0] && existedUser.rows[0].exists) {
         connection.release();
-        throw new Error(" User name is already exist");
+        throw new Error("User name already exists");
       } else {
-        const sql_insert = `INSERT INTO users (first_name,last_name,user_name,password) VALUES ($1,$2,$3,$4) RETURNING *`;
+        const sql_insert = `INSERT INTO users (first_name, last_name, user_name, password) VALUES ($1, $2, $3, $4) RETURNING *`;
         const hash = bcrypt.hashSync(user.password + pepper, saltRound);
         const result = await connection.query(sql_insert, [
           user.firstName,
@@ -83,17 +85,18 @@ export class UserStore {
           secret
         );
         const data = {
-          data: result.rows[0],
+          data: createdUser,
           token: token,
         };
         connection.release();
-        //@ts-ignore
         return data;
       }
     } catch (error) {
+      console.error(`Error in createUser: ${error}`);
       throw new Error(`${error}`);
     }
   }
+
   async authenticate(userName: string, password: string): Promise<User> {
     try {
       const connection = await client!.connect();
