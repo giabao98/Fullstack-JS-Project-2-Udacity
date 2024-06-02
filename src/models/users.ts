@@ -6,15 +6,15 @@ import jwt from "jsonwebtoken";
 dotenv.config();
 
 const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT as string),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  host: process.env.POSTGRES_HOST,
+  port: Number(process.env.POSTGRES_PORT),
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+  database: process.env.POSTGRES_DB,
 });
 
 const pepper = process.env.BCRYPT_PASSWORD;
-const saltRounds = parseInt(process.env.SALT_ROUNDS as string);
+const saltRounds = parseInt(process.env.SALT_ROUND as string);
 const jwtSecret = process.env.SECRET_TOKEN as string;
 
 export type User = {
