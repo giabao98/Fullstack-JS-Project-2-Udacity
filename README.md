@@ -52,7 +52,7 @@ A middleware for token verification has been added in the `middleware` folder. R
 
 ### Environment Variables 
 
-Set the following environment variables for the project:
+Set the following environment variables for the project: 
 
 ```
 POSTGRES_HOST=127.0.0.1
