@@ -50,7 +50,7 @@
 
 A middleware for token verification has been added in the `middleware` folder. Running the `db-migrate up` command will create the necessary databases.
 
-### Environment Variables
+### Environment Variables 
 
 Set the following environment variables for the project:
 
